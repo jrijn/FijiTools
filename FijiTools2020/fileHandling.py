@@ -89,3 +89,46 @@ def preparedir(outdir, subdirs=None):
         else: raise AttributeError("subdirs < 1")
     except Exception as ex:
         IJ.log("Something in preparedir() went wrong: {}".format(type(ex).__name__, repr(ex)))
+
+
+def chunks(seq, num):
+    """Function which splits a list in parts.
+
+    This function takes a list 'seq' and returns it in more or less equal parts of length 'num' as a list of lists.
+
+    Args:
+        seq: A list, at least longer than num.
+        num: the division factor to create sublists.
+
+    Returns:
+        A list of sublists.
+    """
+
+    avg = len(seq) / float(num)
+    out = []
+    last = 0.0
+
+    while last < len(seq):
+        out.append(seq[int(last):int(last + avg)])
+        last += avg
+
+    return out
+
+
+def readdirfiles(directory):
+    """Import tiff files from a directory.
+    This function reads all .tiff files from a directory and it's subdirectories and returns them as a list of
+    hyperstacks.
+
+    Args:
+        directory: The path to a directory containing the tiff files.
+
+    Returns:
+        A list of filepaths.
+    """
+    # Get the list of all files in directory tree at given path
+    listOfFiles = list()
+    for (dirpath, dirnames, filenames) in os.walk(directory):
+        listOfFiles += [os.path.join(dirpath, file) for file in filenames]
+
+    return listOfFiles
