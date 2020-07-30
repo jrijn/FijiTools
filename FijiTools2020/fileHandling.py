@@ -13,12 +13,12 @@ import ij.plugin.MontageMaker as MontageMaker
 import ij.plugin.StackCombiner as StackCombiner
 import ij.plugin.Duplicator as Duplicator
 import ij.plugin.Concatenator as Concatenator
-# import ij.plugin.Thresholder as Thresholder
-# import ij.plugin.filter.ParticleAnalyzer as ParticleAnalyzer
-# import ij.plugin.filter.BackgroundSubtracter as BackgroundSubtracter
-# import ij.plugin.filter.EDM as EDM
+import ij.plugin.Thresholder as Thresholder
+import ij.plugin.filter.ParticleAnalyzer as ParticleAnalyzer
+import ij.plugin.filter.BackgroundSubtracter as BackgroundSubtracter
+import ij.plugin.filter.EDM as EDM
 import os
-# import math
+import math
 
 
 def opencsv():
