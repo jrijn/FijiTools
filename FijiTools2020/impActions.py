@@ -21,37 +21,86 @@ import os
 # import math
 
 
-def montage(imp):
-    """Makes a montage of the input hyperstack.
+# def montage(imp):
+#     """Makes a montage of the input hyperstack.
 
-    Simple function making a montage of the image hyperstack passed as argument.
+#     Simple function making a montage of the image hyperstack passed as argument.
+
+#     Args:
+#         imp: ImagePlus hyperstack object.
+
+#     Returns:
+#         An ImagePlus hyperstack object.
+#     """
+
+#     width, height, nChannels, nSlices, nFrames = imp.getDimensions()
+
+#     channels = ChannelSplitter().split(imp)
+#     montages = []
+#     for channel in channels:
+#         c = MontageMaker().makeMontage2(channel,
+#                                         nFrames,  # int columns
+#                                         nSlices,  # int rows
+#                                         1.00,  # double scale
+#                                         1,  # int first
+#                                         nFrames,  # int last
+#                                         1,  # int inc
+#                                         0,  # int borderWidth
+#                                         False)  # boolean labels)
+#         montages.append(c)
+
+#     # Now re-merge the channels and return the montage.
+#     montage = RGBStackMerge().mergeChannels(montages, False)  # boolean keep
+#     return montage
+
+
+def makemontage(imp, hsize=5, vsize=5, increment = 1):
+    """Makes a montage of a multichannel ImagePlus object.
 
     Args:
-        imp: ImagePlus hyperstack object.
+        imp (ImagePlus): An ImagePlus object.
+        hsize (int, optional): Size of the horizontal axis. Defaults to 5.
+        vsize (int, optional): Size of the vertical axis. Defaults to 5.
+        increment (int, optional): The increment between images. Allows for dropping of e.g. every second frame. Defaults to 1.
 
     Returns:
-        An ImagePlus hyperstack object.
-    """
+        ImagePlus: The montage as ImagePlus object.
+    """    
+    gridsize = hsize * vsize
 
-    width, height, nChannels, nSlices, nFrames = imp.getDimensions()
+    # def _channelmontage(_imp):  
+    #     """Makes a montage of a single channel ImagePlus object.
 
-    channels = ChannelSplitter().split(imp)
-    montages = []
-    for channel in channels:
-        c = MontageMaker().makeMontage2(channel,
-                                        nFrames,  # int columns
-                                        nSlices,  # int rows
-                                        1.00,  # double scale
-                                        1,  # int first
-                                        nFrames,  # int last
-                                        1,  # int inc
-                                        0,  # int borderWidth
-                                        False)  # boolean labels)
-        montages.append(c)
+    #     Args:
+    #         _imp (ImagePlus): A single channel ImagePlus object.
 
-    # Now re-merge the channels and return the montage.
-    montage = RGBStackMerge().mergeChannels(montages, False)  # boolean keep
-    return montage
+    #     Returns:
+    #         ImagePlus: A montage of the one input channel.
+    #     """        
+    #     dims = _imp.getDimensions() # width, height, nChannels, nSlices, nFrames
+    #     frames = listProduct(dims[2:])
+    #     if frames > gridsize: frames = gridsize
+    #     _montage = MontageMaker().makeMontage2(_imp, hsize, vsize, 1.00, 1, frames, increment, 0, True)
+    #     return _montage
+
+    try:
+        name = imp.getTitle()   
+        channels = ChannelSplitter().split(imp)
+
+        for channel in channels:
+            dims = channel.getDimensions() # width, height, nChannels, nSlices, nFrames
+            frames = listProduct(dims[2:])
+            if frames > gridsize: frames = gridsize
+            montage = MontageMaker().makeMontage2(imp, hsize, vsize, 1.00, 1, frames, increment, 0, True)
+
+        montages = [ _channelmontage(channel) for channel in channels ]
+        outmontage = RGBStackMerge().mergeChannels(montages, False)
+        outmontage.setTitle(name)
+        
+        return outmontage
+
+    except Exception as ex:
+        IJ.log("Something in makemontage() went wrong: {}".format(type(ex).__name__, repr(ex)))
 
 
 def _emptystack(imp, inframes=0):
@@ -128,13 +177,13 @@ def concatenatestack(imp, frames_before, frames_after):
     concats = []
     if frames_before != 0 and frames_after != 0:
         # IJ.log ("In concatenatestack(): reached frames_before != 0 & frames_after != 0")
-        for channel,before,after in zip(channels, befores, afters)
+        for channel,before,after in zip(channels, befores, afters):
             concat = Concatenator().run(befores[before], channels[channel], afters[after])
             # concat_c2 = Concatenator().run(before_c2, imp_c2, after_c2)
             concats.append(concat)
     # Following the condition when _emptystack() has to be appended after imp alone.
     elif frames_before == 0 and frames_after != 0:
-        for channel,before,after in zip(channels, afters)
+        for channel,before,after in zip(channels, afters):
             concat = Concatenator().run(channels[channel], afters[after])
             # concat_c2 = Concatenator().run(before_c2, imp_c2, after_c2)
             concats.append(concat)
@@ -143,7 +192,7 @@ def concatenatestack(imp, frames_before, frames_after):
         # concat_c2 = Concatenator().run(imp_c2, after_c2)
     # Following the condition when _emptystack() has to be appended before imp alone.
     elif frames_before != 0 and frames_after == 0:
-        for channel,before in zip(channels, befores)
+        for channel,before in zip(channels, befores):
             concat = Concatenator().run(befores[before], channels[channel])
             # concat_c2 = Concatenator().run(before_c2, imp_c2, after_c2)
             concats.append(concat)
@@ -158,39 +207,6 @@ def concatenatestack(imp, frames_before, frames_after):
     # concat_list = [concat_c1, concat_c2]
     concat = RGBStackMerge().mergeHyperstacks(concats, False)  # boolean keep
     return concat
-
-
-def montage(imp):
-    """Makes a montage of the input hyperstack.
-
-    Simple function making a montage of the image hyperstack passed as argument.
-
-    Args:
-        imp: ImagePlus hyperstack object.
-
-    Returns:
-        An ImagePlus hyperstack object.
-    """
-
-    width, height, nChannels, nSlices, nFrames = imp.getDimensions()
-
-    channels = ChannelSplitter().split(imp)
-    montages = []
-    for channel in channels:
-        c = MontageMaker().makeMontage2(channel,
-                                        nFrames,  # int columns
-                                        nSlices,  # int rows
-                                        1.00,  # double scale
-                                        1,  # int first
-                                        nFrames,  # int last
-                                        1,  # int inc
-                                        0,  # int borderWidth
-                                        False)  # boolean labels)
-        montages.append(c)
-
-    # Now re-merge the channels and return the montage.
-    montage = RGBStackMerge().mergeChannels(montages, False)  # boolean keep
-    return montage
 
 
 def stackprocessor(path, nChannels=4, nSlices=1, nFrames=1):
