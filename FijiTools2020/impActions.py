@@ -18,77 +18,6 @@ import os
 from fileHandling import chunks
 
 
-
-def makemontage(imp, hsize=5, vsize=5, increment = 1):
-    """Makes a montage of a multichannel ImagePlus object.
-
-    Args:
-        imp (ImagePlus): An ImagePlus object.
-        hsize (int, optional): Size of the horizontal axis. Defaults to 5.
-        vsize (int, optional): Size of the vertical axis. Defaults to 5.
-        increment (int, optional): The increment between images. Allows for dropping of e.g. every second frame. Defaults to 1.
-
-    Returns:
-        ImagePlus: The montage as ImagePlus object.
-    """    
-    gridsize = hsize * vsize
-
-    try:
-        name = imp.getTitle()   
-        channels = ChannelSplitter().split(imp)
-
-        for channel in channels:
-            dims = channel.getDimensions() # width, height, nChannels, nSlices, nFrames
-            frames = listProduct(dims[2:])
-            if frames > gridsize: frames = gridsize
-            montage = MontageMaker().makeMontage2(imp, hsize, vsize, 1.00, 1, frames, increment, 0, True)
-
-        montages = [ _channelmontage(channel) for channel in channels ]
-        outmontage = RGBStackMerge().mergeChannels(montages, False)
-        outmontage.setTitle(name)
-        
-        return outmontage
-
-    except Exception as ex:
-        IJ.log("Something in makemontage() went wrong: {}".format(type(ex).__name__, repr(ex)))
-
-
-def _emptystack(imp, inframes=0):
-    """Create an empty stack with the dimensions of imp.
-
-    This function creates an empty stack with black images, with the same dimensions of input image 'imp'.
-    The argument inframes allows one to set the number of frames the stack should have. This defaults to the
-    input frame depth through an if statement.
-
-    Args:
-        imp: ImagePlus hyperstack object.
-        inframes: The total framedepth of the returned stack. Default is 0.
-
-    Returns:
-        An ImagePlus hyperstack object.
-    """
-
-    # Start by reading the calibration and dimensions of the input stack to correspond to the output stack.
-    cal = imp.getCalibration()
-    width, height, nChannels, nSlices, nFrames = imp.getDimensions()
-
-    # This defaults inframes to the input frame depth.
-    if inframes == 0:
-        inframes = nFrames
-
-    # Create the new stack according to the desired dimensions.
-    outstack = IJ.createHyperStack("empty_stack",
-                                   width,  # width
-                                   height,  # height
-                                   nChannels,  # channels
-                                   nSlices,  # slices
-                                   inframes,  # frames
-                                   16)
-    # Re-apply the calibration and return the empty stack.
-    outstack.setCalibration(cal)
-    return outstack
-
-
 def croptracks(imp, tracks, outdir, trackindex="TRACK_INDEX",
             trackx="TRACK_X_LOCATION", tracky="TRACK_Y_LOCATION",
             trackstart="TRACK_START", trackstop="TRACK_STOP",
@@ -315,3 +244,58 @@ def croppoints(imp, spots, outdir, roi_x=150, roi_y=150,
         IJ.saveAs(out, "Tiff", outfile)
 
     IJ.log("\nExecution croppoints() finished.")
+
+
+def makemontage(imp, hsize=5, vsize=5, increment = 1):
+    """Makes a montage of a multichannel ImagePlus object.
+
+    Args:
+        imp (ImagePlus): An ImagePlus object.
+        hsize (int, optional): Size of the horizontal axis. Defaults to 5.
+        vsize (int, optional): Size of the vertical axis. Defaults to 5.
+        increment (int, optional): The increment between images. Allows for dropping of e.g. every second frame. Defaults to 1.
+
+    Returns:
+        ImagePlus: The montage as ImagePlus object.
+    """    
+    gridsize = hsize * vsize
+    
+    def _listProduct(inlist):
+        """Calculates the product of all elements in a list.
+
+        Args:
+            inlist (list): A list of numbers.
+
+        Returns:
+            int or double: The product of all list elements.
+        """    
+        product = 1
+
+        for element in inlist:
+            if isinstance(element, (int, float)):
+                product = element * product
+
+        return product
+
+    def _channelmontage(_imp):  
+        """Makes a montage of a single channel ImagePlus object.
+
+        Args:
+            _imp (ImagePlus): A single channel ImagePlus object.
+
+        Returns:
+            ImagePlus: A montage of the one input channel.
+        """        
+        dims = _imp.getDimensions() # width, height, nChannels, nSlices, nFrames
+        frames = _listProduct(dims[2:])
+        if frames > gridsize: frames = gridsize
+        _montage = MontageMaker().makeMontage2(_imp, hsize, vsize, 1.00, 1, frames, increment, 0, True)
+        return _montage
+
+
+    name = imp.getTitle()   
+    channels = ChannelSplitter().split(imp)
+    montages = [ _channelmontage(channel) for channel in channels ]
+    montage = RGBStackMerge().mergeChannels(montages, False)
+    montage.setTitle(name)
+    return montage

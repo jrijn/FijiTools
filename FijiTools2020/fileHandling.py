@@ -79,38 +79,6 @@ def getresults(rt):
         IJ.log("Something in getresults() went wrong: {}".format(type(ex).__name__, ex.args))
 
 
-
-def preparedir(outdir, subdirs=None):
-    """Prepares input and output directories of this module.
-
-    Simple function which prepares the output directory.
-    If the subfolders do not exist its makes them.
-
-    Args:
-        outdir: Path of the chosen output directory.
-        subdirs: List of the subdir names.
-
-    Returns:
-        A list containing the path strings of the output directories:
-        [path_of_output1, path_of_output2]
-    """
-    try:
-        if subdirs is None:
-            raise AttributeError("subdirs parameter is set to 'None'.")
-      # Also create the output subdirectory paths, if they do not exist already.
-        if len(subdirs) >= 1:
-            outlist = []
-            for dir in subdirs:
-                out = os.path.join(outdir, dir)
-                outlist.append(out)
-                if not os.path.isdir(out):
-                    os.mkdir(out)
-            return outlist
-        else: raise AttributeError("subdirs < 1")
-    except Exception as ex:
-        IJ.log("Something in preparedir() went wrong: {}".format(type(ex).__name__, repr(ex)))
-
-
 def chunks(seq, num):
     """Function which splits a list in parts.
 
@@ -135,20 +103,13 @@ def chunks(seq, num):
     return out
 
 
-def readdirfiles(directory):
-    """Import tiff files from a directory.
-    This function reads all .tiff files from a directory and it's subdirectories and returns them as a list of
-    hyperstacks.
+def saveimage(imp, outdir):
+    """Saves ImagePlus as .tiff.
 
     Args:
-        directory: The path to a directory containing the tiff files.
-
-    Returns:
-        A list of filepaths.
-    """
-    # Get the list of all files in directory tree at given path
-    listOfFiles = list()
-    for (dirpath, dirnames, filenames) in os.walk(directory):
-        listOfFiles += [os.path.join(dirpath, file) for file in filenames]
-
-    return listOfFiles
+        imp (ImagePlus): An ImagePlus object.
+        outdir (dirpath): The output directory.
+    """        
+    name = imp.getTitle()
+    outfile = os.path.join(outdir, "{}.jpg".format(name))
+    IJ.saveAs(imp, "Tiff", outfile)
