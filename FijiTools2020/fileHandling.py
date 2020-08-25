@@ -46,6 +46,24 @@ def opencsv():
 
 
 def getresults(rt):
+    """Retrieve IJ ResultsTable object and return table as list of dictionaries.
+
+    This makes it much easier to iterate through the rows of a ResultsTable object 
+    from within ImageJ.
+
+    Args:
+        rt (ij.measure.ResultsTable): An Imagej ResultsTable object.
+
+    Returns:
+        list: A list of ResultsTable rows, represented as dictionary with column names as keys.
+        
+        for example:
+            [
+            {'column1' : 'value', 'column2' : 'value', ...},
+            {'column1' : 'value', 'column2' : 'value', ...},
+            ...,
+            ]
+    """    
     try:
         columns = rt.getHeadings()
         table = [{column: rt.getValue(column, row) for column in columns} for row in range(rt.size())]
@@ -58,6 +76,7 @@ def getresults(rt):
         IJ.log("The parameter passed to getresults() was not a resultsTable object.")
     except Exception as ex:
         IJ.log("Something in getresults() went wrong: {}".format(type(ex).__name__, ex.args))
+
 
 
 def preparedir(outdir, subdirs=None):

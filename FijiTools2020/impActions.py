@@ -21,39 +21,6 @@ import os
 # import math
 
 
-# def montage(imp):
-#     """Makes a montage of the input hyperstack.
-
-#     Simple function making a montage of the image hyperstack passed as argument.
-
-#     Args:
-#         imp: ImagePlus hyperstack object.
-
-#     Returns:
-#         An ImagePlus hyperstack object.
-#     """
-
-#     width, height, nChannels, nSlices, nFrames = imp.getDimensions()
-
-#     channels = ChannelSplitter().split(imp)
-#     montages = []
-#     for channel in channels:
-#         c = MontageMaker().makeMontage2(channel,
-#                                         nFrames,  # int columns
-#                                         nSlices,  # int rows
-#                                         1.00,  # double scale
-#                                         1,  # int first
-#                                         nFrames,  # int last
-#                                         1,  # int inc
-#                                         0,  # int borderWidth
-#                                         False)  # boolean labels)
-#         montages.append(c)
-
-#     # Now re-merge the channels and return the montage.
-#     montage = RGBStackMerge().mergeChannels(montages, False)  # boolean keep
-#     return montage
-
-
 def makemontage(imp, hsize=5, vsize=5, increment = 1):
     """Makes a montage of a multichannel ImagePlus object.
 
@@ -123,82 +90,230 @@ def _emptystack(imp, inframes=0):
     outstack.setCalibration(cal)
     return outstack
 
-#TODO fix for undefined number of channels
-def concatenatestack(imp, frames_before, frames_after):
-    """Append empty frames (timepoints) before and after an input stack.
 
-    This function is used to append a stack of empty frames before and after the input stack.
-    imp is the input stack, frames_before determines the number of frames to be appended in front,
-    frames_after determines the number of frames to be appended at the end.
+def croptracks(imp, tracks, outdir, trackindex="TRACK_INDEX",
+            trackx="TRACK_X_LOCATION", tracky="TRACK_Y_LOCATION",
+            trackstart="TRACK_START", trackstop="TRACK_STOP",
+            roi_x=150, roi_y=150):
+    """Function cropping ROIs from an ImagePlus stack based on a ResultsTable object.
+
+    This function crops square ROIs from a hyperstack based on locations defined in the ResultsTable.
+    The ResultsTable should, however make sense. The following headings are required:
+
+    "TRACK_INDEX", "TRACK_X_LOCATION", "TRACK_Y_LOCATION", "TRACK_START", "TRACK_STOP"
 
     Args:
-        imp: ImagePlus hyperstack object.
-        frames_before: the number of frames to be appended before.
-        frames_after: the number of frames to be appended after.
-
-    Returns:
-        An ImagePlus hyperstack object.
+        imp: An ImagePlus hyperstack (timelapse).
+        tracks: A getresults(ResultsTable) object (from Track statistics.csv) with the proper column names.
+        outdir: The primary output directory.
+        trackindex: A unique track identifier. Defaults to "TRACK_INDEX"
+        trackxlocation: Defaults to "TRACK_X_LOCATION".
+        trackylocation: Defaults to "TRACK_Y_LOCATION".
+        trackstart: Defaults to "TRACK_START".
+        trackstop: Defaults to "TRACK_STOP".
+        roi_x: Width of the ROI.
+        roi_y: Height of the ROI.
     """
 
+    # Loop through all the tracks, extract the track position, set an ROI and crop the hyperstack.
+    for i in tracks:  # This loops through all tracks. Use a custom 'tracks[0:5]' to test and save time!
+
+        # Extract all needed row values.
+        i_id = int(i[trackindex])
+        i_x = int(i[trackx] * 5.988) # TODO fix for calibration.
+        i_y = int(i[tracky] * 5.988) # TODO fix for calibration.
+        i_start = int(i[trackstart] / 15)
+        i_stop = int(i[trackstop] / 15)
+
+        # Now set an ROI according to the track's xy position in the hyperstack.
+        imp.setRoi(i_x - roi_x / 2, i_y - roi_y / 2,  # upper left x, upper left y
+                   roi_x, roi_y)  # roi x dimension, roi y dimension
+
+        # Retrieve image dimensions.
+        width, height, nChannels, nSlices, nFrames = imp.getDimensions()
+
+        # And then crop (duplicate, actually) this ROI for the track's time duration.
+        IJ.log("Cropping image with TRACK_INDEX: {}/{}".format(i_id+1, int(len(tracks))))
+        # Duplicator().run(firstC, lastC, firstZ, lastZ, firstT, lastT)
+        imp2 = Duplicator().run(imp, 1, nChannels, 1, nSlices, i_start, i_stop)  
+
+        # Save the substack in the output directory
+        outfile = os.path.join(outdir, "TRACK_ID_{}.tif".format(i_id))
+        IJ.saveAs(imp2, "Tiff", outfile)
+
+
+def _horcombine(imp_collection):
+    """Combine a list of stacks with the same dimensions horizontally.
+
+    Args:
+        imp_collection: A list of stacks.
+
+    Returns:
+        A horizontally combined stack of the input images.
+    """
+    comb = imp_collection[0]
+    comb_channels = ChannelSplitter().split(comb)
+    comb_channels = [ i.getImageStack() for i in comb_channels]
+
+
+    for imp in imp_collection:
+
+        if imp == imp_collection[0]:
+            continue
+
+        imp_channels = ChannelSplitter().split(imp)
+        imp_channels = [ i.getImageStack() for i in imp_channels]
+        comb_channels = [ StackCombiner().combineHorizontally(i, j) for i, j in zip(comb_channels, imp_channels) ]
+
+    comb_channels = [ ImagePlus("C{}".format(i+1), channel) for i, channel in enumerate(comb_channels) ]
+    impout = RGBStackMerge().mergeChannels(comb_channels, False)  # boolean keep
+    return impout
+
+
+def _vercombine(imp_collection):
+    """Combine a list of stacks with the same dimensions vertically.
+
+    Args:
+        imp_collection: A list of stacks.
+
+    Returns:
+        A vertically combined stack of the input images.
+    """
+    comb = imp_collection[0]
+    comb_channels = ChannelSplitter().split(comb)
+    comb_channels = [ i.getImageStack() for i in comb_channels ]
+
+    for imp in imp_collection:
+
+        if imp == imp_collection[0]:
+            continue
+
+        imp_channels = ChannelSplitter().split(imp)
+        imp_channels = [ i.getImageStack() for i in imp_channels]
+        comb_channels = [ StackCombiner().combineVertically(i, j) for i, j in zip(comb_channels, imp_channels) ]
+
+    comb_channels = [ ImagePlus("C{}".format(i+1), channel) for i, channel in enumerate(comb_channels) ]
+    impout = RGBStackMerge().mergeChannels(comb_channels, False)  # boolean keep
+    return impout
+
+
+def combinestacks(directory, height=5):
+    """Combine all tiff stacks in a directory to a panel.
+
+    Args:
+        directory: Path to a directory containing a collection of .tiff files.
+        height: The height of the panel (integer). Defaults to 5. The width is spaces automatically.
+
+    Returns:
+        A combined stack of the input images.
+    """
+
+    IJ.log("\nCombining stacks...")
+    files = [f for f in sorted(os.listdir(directory)) if os.path.isfile(os.path.join(directory, f))]
+    IJ.log("Number of files: {}".format(len(files)))
+    groups = chunks(files, height)
+
+    horiz = []
+    for group in groups:
+        h = [ Opener().openImage(directory, imfile) for imfile in group ]
+        h = _horcombine(h)
+        # h.show()
+        horiz.append(h)
+
+    montage = _vercombine(horiz)
+    montage.show()
+
+
+def croppoints(imp, spots, outdir, roi_x=150, roi_y=150,
+               trackid="TRACK_ID", trackxlocation="POSITION_X", trackylocation="POSITION_Y", tracktlocation="FRAME"):
+    """Function to follow and crop the individual spots within a trackmate "Spots statistics.csv" file.
+
+    Args:
+        imp (ImagePlus()): An ImagePlus() stack.
+        spots (list of dictionaries): The output of a getresults() function call.
+        outdir (path): The output directory path.
+        roi_x (int, optional): ROI width (pixels). Defaults to 150.
+        roi_y (int, optional): ROI height (pixels). Defaults to 150.
+        trackid (str, optional): Column name of Track identifiers. Defaults to "TRACK_ID".
+        trackxlocation (str, optional): Column name of spot x location. Defaults to "POSITION_X".
+        trackylocation (str, optional): Column name of spot y location. Defaults to "POSITION_Y".
+        tracktlocation (str, optional): Column name of spot time location. Defaults to "FRAME".
+    """
+
+    def _cropSingleTrack(ispots):
+        """Nested function to crop the spots of a single TRACK_ID.
+
+        Args:
+            ispots (list): List of getresults() dictionaries belonging to a single track.
+
+        Returns:
+            list: A list of ImagePlus stacks of the cropped timeframes.
+        """        
+        outstacks = []
+
+        for j in ispots:
+
+            # Extract all needed row values.
+            j_id = int(j[trackid])
+            j_x = int(j[trackxlocation] * xScaleMultiplier)
+            j_y = int(j[trackylocation] * yScaleMultiplier)
+            j_t = int(j[tracktlocation])
+
+            # Now set an ROI according to the track's xy position in the hyperstack.
+            imp.setRoi(j_x, j_y, roi_x, roi_y)  # upper left x, upper left y, roi x dimension, roi y dimension
+
+            # Optionally, set the correct time position in the stack. This provides cool feedback but is sloooow!
+            # imp.setPosition(1, 1, j_t)
+
+            # Crop the ROI on the corresponding timepoint and add to output stack.
+            crop = Duplicator().run(imp, 1, dims[2], 1, dims[3], j_t, j_t)  # firstC, lastC, firstZ, lastZ, firstT, lastT
+            outstacks.append(crop)
+        
+        return outstacks
+
+
+    # START OF MAIN FUNCTION.
+    # Store the stack dimensions.
+    dims = imp.getDimensions() # width, height, nChannels, nSlices, nFrames
+    IJ.log("Dimensions width: {0}, height: {1}, nChannels: {2}, nSlices: {3}, nFrames: {4}.".format(
+        dims[0], dims[1], dims[2], dims[3], dims[4]))
+
+    # Get stack calibration and set the scale multipliers to correct for output in physical units vs. pixels.
     cal = imp.getCalibration()
-    channels = ChannelSplitter().split(imp)
-
-    # If frames_before is 0, skip this step to prevent creation of an empty image
-    # Also, split channels for correct concatenation in following step.
-    if frames_before != 0:
-        before = _emptystack(imp, frames_before)
-        before.setCalibration(cal)
-        befores = ChannelSplitter().split(before)
-
-    # If frames_after is 0, skip this step to prevent creation of an empty image.
-    # Also, split channels for correct concatenation in following step.
-    if frames_after != 0:
-        after = _emptystack(imp, frames_after)
-        after.setCalibration(cal)
-        afters = ChannelSplitter().split(after)
-
-    # Concatenate existing stacks and merge channels back to one file.
-    # Start with the condition when _emptystack() has to be appended before and after imp.
-    concats = []
-    if frames_before != 0 and frames_after != 0:
-        # IJ.log ("In concatenatestack(): reached frames_before != 0 & frames_after != 0")
-        for channel,before,after in zip(channels, befores, afters):
-            concat = Concatenator().run(befores[before], channels[channel], afters[after])
-            # concat_c2 = Concatenator().run(before_c2, imp_c2, after_c2)
-            concats.append(concat)
-    # Following the condition when _emptystack() has to be appended after imp alone.
-    elif frames_before == 0 and frames_after != 0:
-        for channel,before,after in zip(channels, afters):
-            concat = Concatenator().run(channels[channel], afters[after])
-            # concat_c2 = Concatenator().run(before_c2, imp_c2, after_c2)
-            concats.append(concat)
-        # IJ.log ("In concatenatestack(): reached frames_before == 0 & frames_after != 0")
-        # concat_c1 = Concatenator().run(imp_c1, after_c1)
-        # concat_c2 = Concatenator().run(imp_c2, after_c2)
-    # Following the condition when _emptystack() has to be appended before imp alone.
-    elif frames_before != 0 and frames_after == 0:
-        for channel,before in zip(channels, befores):
-            concat = Concatenator().run(befores[before], channels[channel])
-            # concat_c2 = Concatenator().run(before_c2, imp_c2, after_c2)
-            concats.append(concat)
-        # IJ.log ("In concatenatestack(): reached frames_before != 0 & frames_after == 0")
-        # concat_c1 = Concatenator().run(before_c1, imp_c1)
-        # concat_c2 = Concatenator().run(before_c1, imp_c1)
+    if cal.scaled():
+        xScaleMultiplier = dims[0]/cal.getX(dims[0])
+        yScaleMultiplier = dims[1]/cal.getY(dims[1])
+        IJ.log("Physical units to pixel scale: x = {}, y = {} pixels/unit\n".format(xScaleMultiplier, yScaleMultiplier))
     else:
-        IJ.log("In concatenatestack(): reached else")
-        return False
+        xScaleMultiplier = 1
+        yScaleMultiplier = 1
+        IJ.log("Image is not spatially calibrated. Make sure the input .csv isn't either!")
+        IJ.log("Physical units to pixel scale: x = {}, y = {} pixels/unit\n".format(xScaleMultiplier, yScaleMultiplier))
 
-    # Now re-merge the channels and return the concatenated hyperstack.
-    # concat_list = [concat_c1, concat_c2]
-    concat = RGBStackMerge().mergeHyperstacks(concats, False)  # boolean keep
-    return concat
+    # Add a black frame around the stack to ensure the cropped roi's are never out of view.
+    expand_x = dims[0] + roi_x
+    expand_y = dims[1] + roi_y
+    # This line could be replaced by ij.plugin.CanvasResizer(). 
+    # However, since that function takes ImageStacks, not ImagePlus, that just makes it more difficult for now.
+    IJ.run(imp, "Canvas Size...", "width={} height={} position=Center zero".format(expand_x, expand_y))
 
+    # Retrieve all unique track ids. This is what we loop through.
+    track_ids = set([ track[trackid] for track in spots ])
+    track_ids = list(track_ids)
 
-def stackprocessor(path, nChannels=4, nSlices=1, nFrames=1):
-    imp = ImagePlus(path)
-    imp = HyperStackConverter().toHyperStack(imp,
-                                               nChannels,  # channels
-                                               nSlices,  # slices
-                                               nFrames)  # frames
-    imp = ZProjector.run(imp, "max")
-    return imp
+    # This loop loops through the unique set of TRACK_IDs from the results table.
+    for i in track_ids[0:50]:
+        
+        # Extract all spots (rows) with TRACK_ID == i.
+        trackspots = [ spot for spot in spots if spot[trackid] == i ]
+        IJ.log ("TRACK_ID: {}/{}".format(int(i+1), len(track_ids))) # Monitor progress
+
+        # Crop the spot locations of the current TRACK_ID.
+        out = _cropSingleTrack(trackspots)
+
+        # Concatenate the frames into one ImagePlus and save.
+        out = Concatenator().run(out)
+        outfile = os.path.join(outdir, "TRACK_ID_{}.tif".format(int(i)))
+        IJ.saveAs(out, "Tiff", outfile)
+
+    IJ.log("\nExecution croppoints() finished.")
