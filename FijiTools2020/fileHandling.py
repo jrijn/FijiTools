@@ -1,4 +1,5 @@
 import ij.IJ as IJ
+import ij.io.Opener as Opener
 import ij.ImagePlus as ImagePlus
 import ij.ImageStack as ImageStack
 import ij.WindowManager as wm

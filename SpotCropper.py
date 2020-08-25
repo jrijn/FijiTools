@@ -18,7 +18,7 @@ import ij.WindowManager as WindowManager
 # import os
 # import math
 
-from FijiTools2020.fileHandling import opencsv, getresults, chunks
+from FijiTools2020.fileHandling import opencsv, getresults
 from FijiTools2020.impActions import croppoints, combinestacks
 
 

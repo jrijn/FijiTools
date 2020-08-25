@@ -16,7 +16,7 @@ import ij.WindowManager as WindowManager
 # import ij.plugin.Concatenator as Concatenator
 # import os
 
-from FijiTools2020.fileHandling import opencsv, getresults, chunks
+from FijiTools2020.fileHandling import opencsv, getresults
 from FijiTools2020.impActions import croptracks, combinestacks
 
 
