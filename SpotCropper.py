@@ -16,7 +16,7 @@ def main():
     imp = WindowManager.getCurrentImage()
 
     # Run the main crop function on the source image.
-    croppoints(imp, spots=rt, outdir=outdir, roi_x=150, roi_y=150)
+    croppoints(imp, spots=rt, outdir=outdir, roi_x=150, roi_y=150, ntracks=50)
 
     # Combine all output stacks into one movie.
     combinestacks(outdir, height=8)

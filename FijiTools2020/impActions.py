@@ -151,7 +151,7 @@ def combinestacks(directory, height=5):
     montage.show()
 
 
-def croppoints(imp, spots, outdir, roi_x=150, roi_y=150,
+def croppoints(imp, spots, outdir, roi_x=150, roi_y=150, ntracks=None,
                trackid="TRACK_ID", trackxlocation="POSITION_X", trackylocation="POSITION_Y", tracktlocation="FRAME"):
     """Function to follow and crop the individual spots within a trackmate "Spots statistics.csv" file.
 
@@ -161,11 +161,15 @@ def croppoints(imp, spots, outdir, roi_x=150, roi_y=150,
         outdir (path): The output directory path.
         roi_x (int, optional): ROI width (pixels). Defaults to 150.
         roi_y (int, optional): ROI height (pixels). Defaults to 150.
+        ntracks (int, optional): The number of tracks to process. Defaults to None.
         trackid (str, optional): Column name of Track identifiers. Defaults to "TRACK_ID".
         trackxlocation (str, optional): Column name of spot x location. Defaults to "POSITION_X".
         trackylocation (str, optional): Column name of spot y location. Defaults to "POSITION_Y".
         tracktlocation (str, optional): Column name of spot time location. Defaults to "FRAME".
     """
+
+    if ntracks == None: ntracks = len(spots)
+    elif ntracks > len(spots): ntracks = len(spots)
 
     def _cropSingleTrack(ispots):
         """Nested function to crop the spots of a single TRACK_ID.
@@ -229,7 +233,7 @@ def croppoints(imp, spots, outdir, roi_x=150, roi_y=150,
     track_ids = list(track_ids)
 
     # This loop loops through the unique set of TRACK_IDs from the results table.
-    for i in track_ids[0:50]:
+    for i in track_ids[0:ntracks]:
         
         # Extract all spots (rows) with TRACK_ID == i.
         trackspots = [ spot for spot in spots if spot[trackid] == i ]
