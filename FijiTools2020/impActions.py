@@ -18,7 +18,7 @@ import os
 from fileHandling import chunks
 
 
-def croptracks(imp, tracks, outdir, trackindex="TRACK_INDEX",
+def croptracks(imp, tracks, outdir, trackid="TRACK_ID",
             trackx="TRACK_X_LOCATION", tracky="TRACK_Y_LOCATION",
             trackstart="TRACK_START", trackstop="TRACK_STOP",
             roi_x=150, roi_y=150):
@@ -27,13 +27,13 @@ def croptracks(imp, tracks, outdir, trackindex="TRACK_INDEX",
     This function crops square ROIs from a hyperstack based on locations defined in the ResultsTable.
     The ResultsTable should, however make sense. The following headings are required:
 
-    "TRACK_INDEX", "TRACK_X_LOCATION", "TRACK_Y_LOCATION", "TRACK_START", "TRACK_STOP"
+    "TRACK_ID", "TRACK_X_LOCATION", "TRACK_Y_LOCATION", "TRACK_START", "TRACK_STOP"
 
     Args:
         imp: An ImagePlus hyperstack (timelapse).
         tracks: A getresults(ResultsTable) object (from Track statistics.csv) with the proper column names.
         outdir: The primary output directory.
-        trackindex: A unique track identifier. Defaults to "TRACK_INDEX"
+        trackid: A unique track identifier. Defaults to "TRACK_ID"
         trackxlocation: Defaults to "TRACK_X_LOCATION".
         trackylocation: Defaults to "TRACK_Y_LOCATION".
         trackstart: Defaults to "TRACK_START".
@@ -42,15 +42,17 @@ def croptracks(imp, tracks, outdir, trackindex="TRACK_INDEX",
         roi_y: Height of the ROI.
     """
 
+    cal = imp.getCalibration()
+
     # Loop through all the tracks, extract the track position, set an ROI and crop the hyperstack.
     for i in tracks:  # This loops through all tracks. Use a custom 'tracks[0:5]' to test and save time!
 
         # Extract all needed row values.
-        i_id = int(i[trackindex])
-        i_x = int(i[trackx] * 5.988) # TODO fix for calibration.
-        i_y = int(i[tracky] * 5.988) # TODO fix for calibration.
-        i_start = int(i[trackstart] / 15)
-        i_stop = int(i[trackstop] / 15)
+        i_id = int(i[trackid])
+        i_x = int(i[trackx] * 1/cal.pixelWidth) # TODO fix for calibration.
+        i_y = int(i[tracky] * 1/cal.pixelHeight) # TODO fix for calibration.
+        i_start = int(i[trackstart] / cal.frameInterval)
+        i_stop = int(i[trackstop] / cal.frameInterval)
 
         # Now set an ROI according to the track's xy position in the hyperstack.
         imp.setRoi(i_x - roi_x / 2, i_y - roi_y / 2,  # upper left x, upper left y
@@ -60,7 +62,7 @@ def croptracks(imp, tracks, outdir, trackindex="TRACK_INDEX",
         width, height, nChannels, nSlices, nFrames = imp.getDimensions()
 
         # And then crop (duplicate, actually) this ROI for the track's time duration.
-        IJ.log("Cropping image with TRACK_INDEX: {}/{}".format(i_id+1, int(len(tracks))))
+        IJ.log("Cropping image with TRACK_ID: {}/{}".format(i_id+1, int(len(tracks))))
         # Duplicator().run(firstC, lastC, firstZ, lastZ, firstT, lastT)
         imp2 = Duplicator().run(imp, 1, nChannels, 1, nSlices, i_start, i_stop)  
 
