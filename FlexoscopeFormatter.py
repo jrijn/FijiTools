@@ -21,15 +21,17 @@ def main():
     # Show image
     imp.show()
 
-    # Split channels, reset histogram min/max, and convert to 8-bit to save memory.
+    # Split channels.
     channels = ChannelSplitter().split(imp)
 
     # Process channel 1.
+    # subtractzproject(imp, projectionMethod="Median")
     channels[0] = subtractzproject(channels[0])
     IJ.run(channels[0], "8-bit", "") 
 
     # Process channel 2.
-    channels[1] = glidingprojection(channels[1])
+    # glidingprojection(imp, startframe=1, stopframe=None, glidingFlag=True, no_frames_per_integral=3, projectionmethod="Median")
+    channels[1] = glidingprojection(channels[1]) 
     IJ.run(channels[1], "8-bit", "") 
 
     # Merge channels.

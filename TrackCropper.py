@@ -23,6 +23,10 @@ def main():
     imp = WindowManager.getCurrentImage()
 
     # Run the main crop function on the source image.
+    # croptracks(imp, tracks, outdir, trackid="TRACK_ID",
+    #            trackx="TRACK_X_LOCATION", tracky="TRACK_Y_LOCATION",
+    #            trackstart="TRACK_START", trackstop="TRACK_STOP",
+    #            roi_x=150, roi_y=150)
     croptracks(imp, tracks=rt, outdir=outdir, roi_x=150, roi_y=150)
 
     # Combine all output stacks into one movie.
