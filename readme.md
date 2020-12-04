@@ -2,7 +2,7 @@
 
 ## Introduction
 
-FijiTools2020 is a collection of tools designed for use in ImageJ/Fiji. Most of them are meant to work in conjunction with a separately performed Trackmate analysis.
+FijiTools2020 is a collection of tools designed for use in ImageJ/Fiji. Some of them are meant to work in conjunction with a separately performed Trackmate analysis. You're free to use anything useful, but please refer back to this repository as your source :). Thanks!
 
 ## Installation
 
