@@ -1,3 +1,9 @@
+# The TrackCropper script is designed to crop a region of interest 
+# from an input hyperstack. The size of the ROI can be set manually, 
+# and will be centered around the x,y position of each individual 
+# track. The resulting cropped stacks will be saved in the chosen 
+# output directory. 
+# 
 # Jorik van Rijn <jorik.vanrijn@gmail.com> - 2020
 import ij.IJ as IJ
 import ij.WindowManager as WindowManager
