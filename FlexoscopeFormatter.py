@@ -26,9 +26,11 @@ def main():
 
     # Process channel 1.
     channels[0] = subtractzproject(channels[0])
+    IJ.run(channels[0], "8-bit", "") 
 
     # Process channel 2.
     channels[1] = glidingprojection(channels[1])
+    IJ.run(channels[1], "8-bit", "") 
 
     # Merge channels.
     merge = RGBStackMerge().mergeChannels(channels, True) # boolean keep
