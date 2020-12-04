@@ -1,3 +1,4 @@
+# Jorik van Rijn <jorik.vanrijn@gmail.com> - 2020
 import ij.IJ as IJ
 import ij.WindowManager as WindowManager
 from FijiTools2020.fileHandling import opencsv, getresults

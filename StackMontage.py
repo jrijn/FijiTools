@@ -1,3 +1,4 @@
+# Jorik van Rijn <jorik.vanrijn@gmail.com> - 2020
 import os
 import ij.IJ as IJ
 import ij.io.Opener as Opener

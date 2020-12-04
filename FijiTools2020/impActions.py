@@ -1,3 +1,4 @@
+# Jorik van Rijn <jorik.vanrijn@gmail.com> - 2020
 import ij.IJ as IJ
 import ij.io.Opener as Opener
 import ij.ImagePlus as ImagePlus
@@ -9,13 +10,14 @@ import ij.plugin.ChannelSplitter as ChannelSplitter
 import ij.plugin.HyperStackConverter as HyperStackConverter
 import ij.plugin.ZProjector as ZProjector
 import ij.plugin.RGBStackMerge as RGBStackMerge
+import ij.plugin.ImageCalculator as ImageCalculator
 import ij.plugin.StackCombiner as StackCombiner
 import ij.plugin.MontageMaker as MontageMaker
 import ij.plugin.StackCombiner as StackCombiner
 import ij.plugin.Duplicator as Duplicator
 import ij.plugin.Concatenator as Concatenator
 import os
-from fileHandling import chunks
+from FijiTools2020.fileHandling import chunks
 
 
 def croptracks(imp, tracks, outdir, trackid="TRACK_ID",
@@ -305,3 +307,100 @@ def makemontage(imp, hsize=5, vsize=5, increment = 1):
     montage = RGBStackMerge().mergeChannels(montages, False)
     montage.setTitle(name)
     return montage
+
+# '''This function is based on Jens Eriksson's Collective Migration Buddy v2.0 
+# (https://github.com/Oftatkofta/ImageJ-plugins)
+def glidingprojection(imp, startframe=1, stopframe=None, 
+                      glidingFlag=True, no_frames_per_integral=3, projectionmethod="Median"):
+    """This function subtracts the gliding projection of several frames from the
+    input stack. Thus, everything which moves too fast is filtered away.
+
+    Args:
+        imp (ImagePlus): Input image as ImagePlus object.
+        startframe (int, optional): Choose a start frame. Defaults to 1.
+        stopframe (int, optional): Choose an end frame. Defaults to None.
+        glidingFlag (bool, optional): Should a gliding frame by frame projection be used? Defaults to True.
+        no_frames_per_integral (int, optional): Number of frames to project each integral. Defaults to 3.
+        projectionmethod (str, optional): Choose the projection method. Options are 
+        'Average Intensity', 'Max Intensity', 'Min Intensity', 'Sum Slices', 'Standard Deviation', 'Median'. Defaults to "Median".
+
+    Raises:
+        RuntimeException: Start frame > stop frame.
+
+    Returns:
+        ImagePlus: The output stack.
+    """
+    # Store some image properties.
+    width, height, nChannels, nSlices, nFrames = imp.getDimensions()
+    title = imp.getTitle()
+
+    # Some simple sanity checks for input parameters.
+    if stopframe == None: stopframe = nFrames
+    if (startframe > stopframe):
+        IJ.showMessage("Start frame > Stop frame, can't go backwards in time!")
+        raise RuntimeException("Start frame > Stop frame!")
+
+    # If a subset of the image is to be projected, these lines of code handle that.
+    if ((startframe != 1) or (stopframe != nFrames)):
+        imp = Duplicator().run(imp, 1, nChannels, 1, nSlices, startframe, stopframe)
+    
+    # Define the number of frames to advance per step based on boolean input parameter glidingFlag.
+    if glidingFlag: frames_to_advance_per_step = 1
+    else: frames_to_advance_per_step = no_frames_per_integral
+
+    # Make a dict containg method_name:const_fieled_value pairs for the projection methods
+    methods_as_strings = ['Average Intensity', 'Max Intensity', 'Min Intensity', 'Sum Slices', 'Standard Deviation', 'Median']
+    methods_as_const = [ZProjector.AVG_METHOD, ZProjector.MAX_METHOD, ZProjector.MIN_METHOD, ZProjector.SUM_METHOD, ZProjector.SD_METHOD, ZProjector.MEDIAN_METHOD]
+    method_dict = dict(zip(methods_as_strings, methods_as_const))
+
+    # Initialize a ZProjector object and an empty stack to collect projections.
+    zp = ZProjector(imp)
+    zp.setMethod(method_dict[projectionmethod])
+    outstack = imp.createEmptyStack()
+
+    # Loop through all the frames in the image, and project that frame with the other frames in the integral.
+    for frame in range(1, nFrames+1, frames_to_advance_per_step):
+        zp.setStartSlice(frame)
+        zp.setStopSlice(frame+no_frames_per_integral)
+        zp.doProjection()
+        outstack.addSlice(zp.getProjection().getProcessor())
+
+    # Create an image processor from the newly created Z-projection stack
+    # nFrames = outstack.getSize()/nChannels
+    impout = ImagePlus(title+'_'+projectionmethod+'_'+str(no_frames_per_integral)+'_frames', outstack)
+    impout = HyperStackConverter.toHyperStack(impout, nChannels, nSlices, nFrames)
+    return impout
+
+
+def subtractzproject(imp, projectionMethod="Median"):
+    """This function takes an input stack, and subtracts a projection from the 
+    whole stack from each individual frame. Thereby, everything that is not moving 
+    in a timeseries is filtered away.
+
+    Args:
+        imp (ImagePlus): An input stack as ImagePlus object.
+        projectionMethod (str, optional): Choose the projection method. Options are 
+            'Average Intensity', 'Max Intensity', 'Min Intensity', 'Sum Slices', 'Standard Deviation', 'Median'. 
+            Defaults to "Median".
+
+    Returns:
+        ImagePlus: The resulting stack.
+    """    
+    #Start by getting the active image window and get the current active channel and other stats
+    cal = imp.getCalibration()
+    title = imp.getTitle()
+
+    # Define a dictionary containg method_name:const_fieled_value pairs for the projection methods.
+    methods_as_strings = ['Average Intensity', 'Max Intensity', 'Min Intensity', 'Sum Slices', 'Standard Deviation', 'Median']
+    methods_as_const = [ZProjector.AVG_METHOD, ZProjector.MAX_METHOD, ZProjector.MIN_METHOD, ZProjector.SUM_METHOD, ZProjector.SD_METHOD, ZProjector.MEDIAN_METHOD]
+    method_dict = dict(zip(methods_as_strings, methods_as_const))
+
+    # Run Z-Projection.
+    zp = ZProjector(imp)
+    zp.setMethod(method_dict[projectionMethod]) 
+    zp.doProjection()
+    impMedian = zp.getProjection()
+
+    # Subtract Z-Projection and return output ImagePlus.
+    impout = ImageCalculator().run("Subtract create 32-bit stack", imp, impMedian)
+    return impout
