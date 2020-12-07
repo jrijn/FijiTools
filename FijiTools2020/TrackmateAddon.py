@@ -19,51 +19,47 @@ import os
 
 class CropTool(object):
 
-    def __init__(self, trackscsv):
-        self.trackscsv = trackscsv
-        # self.tracks = self.opentracks()
-        # self.spotscsv = spotscsv
-        # self.spots = self.openspots()
+    def __init__(self):
+        self.tracks = self.opencsv(name="Track statistics.csv")
+        self.spots = self.opencsv(name="Spots in tracks statistics.csv")
+        self.links = self.opencsv(name="Links in tracks.csv")
 
-    # def opentracks(self):
-    #     # Return if the csv object was not set.
-    #     if self.trackscsv == None: return None
 
-    #     # Open the csv file and return it as ResultsTable object.
-    #     try:
-    #         rt = ResultsTable.open(csv)
-    #         columns = rt.getHeadings()
-    #         table = [{column: rt.getValue(column, row) for column in columns} for row in range(rt.size())]
+    def opencsv(self, name):
+        # Return if the csv object was not set.
+        # if self.trackscsv == None: return None
+
+        # Open the csv file and return it as ResultsTable object.
+        try:
+            csv = IJ.getFilePath("Choose the {} file".format(name))
+
+            if csv.endswith(".csv"): 
+                rt = ResultsTable.open(csv)
+            else: 
+                IJ.log("{} was not a .csv file".format(csv))
+                raise ValueError
+
+            columns = rt.getHeadings()
+            table = [{column: rt.getValue(column, row) for column in columns} for row in range(rt.size())]
             
-    #         if rt.columnExists("Label"):
-    #             for i in range(len(table)):
-    #                 table[i]["Label"] = rt.getStringValue("Label", i)
+            if rt.columnExists("Label"):
+                for i in range(len(table)):
+                    table[i]["Label"] = rt.getStringValue("Label", i)
 
-    #         # IJ.log("Read {} rows in trackscsv.".format(table, len(table)))
-    #         return table
+            IJ.log("Read {} rows in {}.".format(len(table), name))
+            return table
 
-    #     except Exception as ex:
-    #         IJ.log("Something in opencsv() went wrong: {}".format(type(ex).__name__, ex.args))
-
-
-    # def openspots(self):
-    #     # Return if the csv object was not set.
-    #     if self.spotscsv == None: return None
-
-    #     # Open the csv file and return it as ResultsTable object.
-    #     try:
-    #         rt = ResultsTable.open(csv)
-    #         columns = rt.getHeadings()
-    #         table = [{column: rt.getValue(column, row) for column in columns} for row in range(rt.size())]
-            
-    #         if rt.columnExists("Label"):
-    #             for i in range(len(table)):
-    #                 table[i]["Label"] = rt.getStringValue("Label", i)
-
-    #         # IJ.log("Read {} rows in trackscsv.".format(table, len(table)))
-    #         return table
-
-    #     except Exception as ex:
-    #         IJ.log("Something in opencsv() went wrong: {}".format(type(ex).__name__, ex.args))
+        except Exception as ex:
+            IJ.log("Something in opencsv() went wrong: {}".format(type(ex).__name__, ex.args))
 
 
+    
+
+
+def main():
+    imp = "test.tiff"
+    imp = CropTool()
+    IJ.log("First TRACK_ID: {}".format(imp.tracks[0]["TRACK_ID"]))
+
+
+main()
