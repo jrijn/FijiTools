@@ -34,6 +34,11 @@ def main():
     channels[1] = glidingprojection(channels[1]) 
     IJ.run(channels[1], "8-bit", "") 
 
+    # [Optional] Process channel 3, 4, etc.
+    # subtractzproject(channels[3], projectionMethod="Median")
+    # glidingprojection(channels[3], startframe=1, stopframe=None, glidingFlag=True, no_frames_per_integral=3, projectionmethod="Median")
+    # IJ.run(channels[3], "8-bit", "") 
+
     # Merge channels.
     merge = RGBStackMerge().mergeChannels(channels, True) # boolean keep
     merge.show()
