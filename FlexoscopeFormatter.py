@@ -16,13 +16,13 @@ from FijiTools2020.impActions import subtractzproject, glidingprojection
 def main():
     # Open a .ome.tif image from the Flexoscope.
     impath = IJ.getFilePath("Choose .ome.tiff file")
-    imp = Opener.openUsingBioFormats(impath)
+    channels = Opener.openUsingBioFormats(impath)
 
     # Show image
-    imp.show()
+    # imp.show() # straight to channels object sames memory.
 
     # Split channels.
-    channels = ChannelSplitter().split(imp)
+    channels = ChannelSplitter().split(channels)
 
     # Process channel 1.
     # subtractzproject(imp, projectionMethod="Median")

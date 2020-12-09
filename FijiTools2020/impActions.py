@@ -51,8 +51,8 @@ def croptracks(imp, tracks, outdir, trackid="TRACK_ID",
 
         # Extract all needed row values.
         i_id = int(i[trackid])
-        i_x = int(i[trackx] * 1/cal.pixelWidth) # TODO fix for calibration.
-        i_y = int(i[tracky] * 1/cal.pixelHeight) # TODO fix for calibration.
+        i_x = int(i[trackx] / cal.pixelWidth) # TODO fix for calibration.
+        i_y = int(i[tracky] / cal.pixelHeight) # TODO fix for calibration.
         i_start = int(i[trackstart] / cal.frameInterval)
         i_stop = int(i[trackstop] / cal.frameInterval)
 
@@ -331,6 +331,7 @@ def glidingprojection(imp, startframe=1, stopframe=None,
         ImagePlus: The output stack.
     """
     # Store some image properties.
+    cal = imp.getCalibration()
     width, height, nChannels, nSlices, nFrames = imp.getDimensions()
     title = imp.getTitle()
 
@@ -369,6 +370,7 @@ def glidingprojection(imp, startframe=1, stopframe=None,
     # nFrames = outstack.getSize()/nChannels
     impout = ImagePlus(title+'_'+projectionmethod+'_'+str(no_frames_per_integral)+'_frames', outstack)
     impout = HyperStackConverter.toHyperStack(impout, nChannels, nSlices, nFrames)
+    impout.setCalibration(cal)
     return impout
 
 
@@ -403,4 +405,5 @@ def subtractzproject(imp, projectionMethod="Median"):
 
     # Subtract Z-Projection and return output ImagePlus.
     impout = ImageCalculator().run("Subtract create 32-bit stack", imp, impMedian)
+    impout.setCalibration(cal)
     return impout
