@@ -6,7 +6,7 @@ import ij.ImagePlus as ImagePlus
 import ij.plugin.ChannelSplitter as ChannelSplitter
 import ij.plugin.RGBStackMerge as RGBStackMerge
 import ij.process.ImageProcessor as ImageProcessor
-from FijiTools2020.impActions import subtractzproject
+from FijiTools2020.impActions import doGaussianFilter
 
 
 def main():
