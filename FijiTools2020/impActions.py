@@ -407,3 +407,30 @@ def subtractzproject(imp, projectionMethod="Median"):
     impout = ImageCalculator().run("Subtract create 32-bit stack", imp, impMedian)
     impout.setCalibration(cal)
     return impout
+
+
+def doGaussianFilter(imp, radius = 30):
+    """This function takes an input stack, and subtracts a gaussian filtered image
+    from each individual frame. Thereby, everything that is not moving 
+    in a timeseries is filtered away.
+
+    Args:
+        imp (ImagePlus): An input stack as ImagePlus object.
+        projectionMethod (str, optional): Choose the projection method. Options are 
+            'Average Intensity', 'Max Intensity', 'Min Intensity', 'Sum Slices', 'Standard Deviation', 'Median'. 
+            Defaults to "Median".
+
+    Returns:
+        ImagePlus: The resulting stack.
+    """    
+    #Start by getting the active image window and get the current active channel and other stats
+    cal = imp.getCalibration()
+    title = imp.getTitle()
+
+    # Make gaussian filtered image.
+    gaussian = IJ.run(imp, "Gaussian Blur...", "sigma=30 stack")
+
+    # Subtract Z-Projection and return output ImagePlus.
+    impout = ImageCalculator().run("Subtract create 32-bit stack", imp, gaussian)
+    impout.setCalibration(cal)
+    return impout
