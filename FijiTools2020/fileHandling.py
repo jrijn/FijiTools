@@ -24,12 +24,10 @@ import math
 
 
 def opencsv():
-    """Simply imports .csv file in ImageJ.
+    """Simply imports .csv file in ImageJ. Ask the user for the location
+    of a .csv file.
 
-    Ask the user for the location of a .csv file.
-
-    Returns:
-        A ResultsTable object from the input file.
+    Returns: A ResultsTable object from the input file.
     """
 
     csv = IJ.getFilePath("Choose a .csv file")
@@ -48,17 +46,17 @@ def opencsv():
 
 
 def getresults(rt):
-    """Retrieve IJ ResultsTable object and return table as list of dictionaries.
+    """Retrieve IJ ResultsTable object and return table as list of
+    dictionaries.
 
-    This makes it much easier to iterate through the rows of a ResultsTable object 
-    from within ImageJ.
+    This makes it much easier to iterate through the rows of a
+    ResultsTable object from within ImageJ.
 
-    Args:
-        rt (ij.measure.ResultsTable): An Imagej ResultsTable object.
+    Args: rt (ij.measure.ResultsTable): An Imagej ResultsTable object.
 
-    Returns:
-        list: A list of ResultsTable rows, represented as dictionary with column names as keys.
-        
+    Returns: list: A list of ResultsTable rows, represented as
+        dictionary with column names as keys.
+
         for example:
             [
             {'column1' : 'value', 'column2' : 'value', ...},
@@ -81,16 +79,13 @@ def getresults(rt):
 
 
 def chunks(seq, num):
-    """Function which splits a list in parts.
+    """This function takes a list 'seq' and returns it in more or less
+    equal parts of length 'num' as a list of lists.
 
-    This function takes a list 'seq' and returns it in more or less equal parts of length 'num' as a list of lists.
+    Args: seq: A list, at least longer than num. num: the division
+        factor to create sublists.
 
-    Args:
-        seq: A list, at least longer than num.
-        num: the division factor to create sublists.
-
-    Returns:
-        A list of sublists.
+    Returns: A list of sublists.
     """
 
     avg = len(seq) / float(num)

@@ -1,6 +1,6 @@
-# This script takes an input directory with a number of (hyper)stacks. 
-# Each input stack will be formatted as a montage with the chosen 
-# dimensions and frame interval. The resulting montage images are saved 
+# This script takes an input directory with a number of (hyper)stacks.
+# Each input stack will be formatted as a montage with the chosen
+# dimensions and frame interval. The resulting montage images are saved
 # in the chosen output directory.
 
 # Jorik van Rijn <jorik.vanrijn@gmail.com> - 2020

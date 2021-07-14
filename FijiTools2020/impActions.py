@@ -1,4 +1,5 @@
 # Jorik van Rijn <jorik.vanrijn@gmail.com> - 2020
+import os
 import ij.IJ as IJ
 import ij.io.Opener as Opener
 import ij.ImagePlus as ImagePlus
@@ -16,7 +17,7 @@ import ij.plugin.MontageMaker as MontageMaker
 import ij.plugin.StackCombiner as StackCombiner
 import ij.plugin.Duplicator as Duplicator
 import ij.plugin.Concatenator as Concatenator
-import os
+import ij.plugin.GaussianBlur3D as GaussianBlur3D
 from FijiTools2020.fileHandling import chunks
 
 
@@ -24,12 +25,11 @@ def croptracks(imp, tracks, outdir, trackid="TRACK_ID",
             trackx="TRACK_X_LOCATION", tracky="TRACK_Y_LOCATION",
             trackstart="TRACK_START", trackstop="TRACK_STOP",
             roi_x=150, roi_y=150):
-    """Function cropping ROIs from an ImagePlus stack based on a ResultsTable object.
-
-    This function crops square ROIs from a hyperstack based on locations defined in the ResultsTable.
-    The ResultsTable should, however make sense. The following headings are required:
-
-    "TRACK_ID", "TRACK_X_LOCATION", "TRACK_Y_LOCATION", "TRACK_START", "TRACK_STOP"
+    """Function cropping ROIs from an ImagePlus stack based on a
+ResultsTable object. This function crops square ROIs from a hyperstack
+based on locations defined in the ResultsTable. The ResultsTable should
+however make sense. The following headings are required: "TRACK_ID",
+"TRACK_X_LOCATION", "TRACK_Y_LOCATION", "TRACK_START", "TRACK_STOP"
 
     Args:
         imp: An ImagePlus hyperstack (timelapse).
@@ -46,8 +46,11 @@ def croptracks(imp, tracks, outdir, trackid="TRACK_ID",
 
     cal = imp.getCalibration()
 
-    # Loop through all the tracks, extract the track position, set an ROI and crop the hyperstack.
-    for i in tracks:  # This loops through all tracks. Use a custom 'tracks[0:5]' to test and save time!
+    # Loop through all the tracks, extract the track position, set an
+    # ROI and crop the hyperstack.
+    for i in tracks:  
+        # This loops through all tracks. Use a custom 'tracks[0:5]' to
+        # test and save time!
 
         # Extract all needed row values.
         i_id = int(i[trackid])
@@ -56,14 +59,16 @@ def croptracks(imp, tracks, outdir, trackid="TRACK_ID",
         i_start = int(i[trackstart] / cal.frameInterval)
         i_stop = int(i[trackstop] / cal.frameInterval)
 
-        # Now set an ROI according to the track's xy position in the hyperstack.
+        # Now set an ROI according to the track's xy position in the
+        # hyperstack.
         imp.setRoi(i_x - roi_x / 2, i_y - roi_y / 2,  # upper left x, upper left y
                    roi_x, roi_y)  # roi x dimension, roi y dimension
 
         # Retrieve image dimensions.
         width, height, nChannels, nSlices, nFrames = imp.getDimensions()
 
-        # And then crop (duplicate, actually) this ROI for the track's time duration.
+        # And then crop (duplicate, actually) this ROI for the track's
+        # time duration.
         IJ.log("Cropping image with TRACK_ID: {}/{}".format(i_id+1, int(len(tracks))))
         # Duplicator().run(firstC, lastC, firstZ, lastZ, firstT, lastT)
         imp2 = Duplicator().run(imp, 1, nChannels, 1, nSlices, i_start, i_stop)  
@@ -133,7 +138,8 @@ def combinestacks(directory, height=5):
 
     Args:
         directory: Path to a directory containing a collection of .tiff files.
-        height: The height of the panel (integer). Defaults to 5. The width is spaces automatically.
+        height: The height of the panel (integer). Defaults to 5. The
+        width is spaces automatically.
 
     Returns:
         A combined stack of the input images.
@@ -157,7 +163,8 @@ def combinestacks(directory, height=5):
 
 def croppoints(imp, spots, outdir, roi_x=150, roi_y=150, ntracks=None,
                trackid="TRACK_ID", trackxlocation="POSITION_X", trackylocation="POSITION_Y", tracktlocation="FRAME"):
-    """Function to follow and crop the individual spots within a trackmate "Spots statistics.csv" file.
+    """Function to follow and crop the individual spots within a
+trackmate "Spots statistics.csv" file.
 
     Args:
         imp (ImagePlus()): An ImagePlus() stack.
@@ -179,7 +186,8 @@ def croppoints(imp, spots, outdir, roi_x=150, roi_y=150, ntracks=None,
         """Nested function to crop the spots of a single TRACK_ID.
 
         Args:
-            ispots (list): List of getresults() dictionaries belonging to a single track.
+            ispots (list): List of getresults() dictionaries belonging
+            to a single track.
 
         Returns:
             list: A list of ImagePlus stacks of the cropped timeframes.
@@ -194,13 +202,16 @@ def croppoints(imp, spots, outdir, roi_x=150, roi_y=150, ntracks=None,
             j_y = int(j[trackylocation] * yScaleMultiplier)
             j_t = int(j[tracktlocation])
 
-            # Now set an ROI according to the track's xy position in the hyperstack.
-            imp.setRoi(j_x, j_y, roi_x, roi_y)  # upper left x, upper left y, roi x dimension, roi y dimension
+            # Now set an ROI according to the track's xy position in the
+            # hyperstack.
+            imp.setRoi(j_x, j_y, roi_x, roi_y)  # upper left x, upper left y,roi x dimension, roi y dimension
 
-            # Optionally, set the correct time position in the stack. This provides cool feedback but is sloooow!
+            # Optionally, set the correct time position in the stack.
+            # This provides cool feedback but is sloooow!
             # imp.setPosition(1, 1, j_t)
 
-            # Crop the ROI on the corresponding timepoint and add to output stack.
+            # Crop the ROI on the corresponding timepoint and add to
+            # output stack.
             crop = Duplicator().run(imp, 1, dims[2], 1, dims[3], j_t, j_t)  # firstC, lastC, firstZ, lastZ, firstT, lastT
             outstacks.append(crop)
         
@@ -213,7 +224,8 @@ def croppoints(imp, spots, outdir, roi_x=150, roi_y=150, ntracks=None,
     IJ.log("Dimensions width: {0}, height: {1}, nChannels: {2}, nSlices: {3}, nFrames: {4}.".format(
         dims[0], dims[1], dims[2], dims[3], dims[4]))
 
-    # Get stack calibration and set the scale multipliers to correct for output in physical units vs. pixels.
+    # Get stack calibration and set the scale multipliers to correct for
+    # output in physical units vs. pixels.
     cal = imp.getCalibration()
     if cal.scaled():
         xScaleMultiplier = dims[0]/cal.getX(dims[0])
@@ -225,18 +237,22 @@ def croppoints(imp, spots, outdir, roi_x=150, roi_y=150, ntracks=None,
         IJ.log("Image is not spatially calibrated. Make sure the input .csv isn't either!")
         IJ.log("Physical units to pixel scale: x = {}, y = {} pixels/unit\n".format(xScaleMultiplier, yScaleMultiplier))
 
-    # Add a black frame around the stack to ensure the cropped roi's are never out of view.
+    # Add a black frame around the stack to ensure the cropped roi's are
+    # never out of view.
     expand_x = dims[0] + roi_x
     expand_y = dims[1] + roi_y
+
     # This line could be replaced by ij.plugin.CanvasResizer(). 
-    # However, since that function takes ImageStacks, not ImagePlus, that just makes it more difficult for now.
+    # However, since that function takes ImageStacks, not ImagePlus,
+    # that just makes it more difficult for now.
     IJ.run(imp, "Canvas Size...", "width={} height={} position=Center zero".format(expand_x, expand_y))
 
     # Retrieve all unique track ids. This is what we loop through.
     track_ids = set([ track[trackid] for track in spots ])
     track_ids = list(track_ids)
 
-    # This loop loops through the unique set of TRACK_IDs from the results table.
+    # This loop loops through the unique set of TRACK_IDs from the
+    # results table.
     for i in track_ids[0:ntracks]:
         
         # Extract all spots (rows) with TRACK_ID == i.
@@ -310,10 +326,10 @@ def makemontage(imp, hsize=5, vsize=5, increment = 1):
 
 # '''This function is based on Jens Eriksson's Collective Migration Buddy v2.0 
 # (https://github.com/Oftatkofta/ImageJ-plugins)
-def glidingprojection(imp, startframe=1, stopframe=None, 
-                      glidingFlag=True, no_frames_per_integral=3, projectionmethod="Median"):
-    """This function subtracts the gliding projection of several frames from the
-    input stack. Thus, everything which moves too fast is filtered away.
+def glidingprojection(imp, startframe=1, stopframe=None, glidingFlag=True, no_frames_per_integral=3, projectionmethod="Median"):
+    """This function subtracts the gliding projection of several frames
+from the input stack. Thus, everything which moves too fast is filtered
+away.
 
     Args:
         imp (ImagePlus): Input image as ImagePlus object.
@@ -321,8 +337,7 @@ def glidingprojection(imp, startframe=1, stopframe=None,
         stopframe (int, optional): Choose an end frame. Defaults to None.
         glidingFlag (bool, optional): Should a gliding frame by frame projection be used? Defaults to True.
         no_frames_per_integral (int, optional): Number of frames to project each integral. Defaults to 3.
-        projectionmethod (str, optional): Choose the projection method. Options are 
-        'Average Intensity', 'Max Intensity', 'Min Intensity', 'Sum Slices', 'Standard Deviation', 'Median'. Defaults to "Median".
+        projectionmethod (str, optional): Choose the projection method. Options are 'Average Intensity', 'Max Intensity', 'Min Intensity', 'Sum Slices', 'Standard Deviation', 'Median'. Defaults to "Median".
 
     Raises:
         RuntimeException: Start frame > stop frame.
@@ -376,8 +391,8 @@ def glidingprojection(imp, startframe=1, stopframe=None,
 
 def subtractzproject(imp, projectionMethod="Median"):
     """This function takes an input stack, and subtracts a projection from the 
-    whole stack from each individual frame. Thereby, everything that is not moving 
-    in a timeseries is filtered away.
+    whole stack from each individual frame. Thereby, everything that is
+    not moving in a timeseries is filtered away.
 
     Args:
         imp (ImagePlus): An input stack as ImagePlus object.
@@ -388,11 +403,13 @@ def subtractzproject(imp, projectionMethod="Median"):
     Returns:
         ImagePlus: The resulting stack.
     """    
-    #Start by getting the active image window and get the current active channel and other stats
+    #Start by getting the active image window and get the current active
+    #channel and other stats
     cal = imp.getCalibration()
     title = imp.getTitle()
 
-    # Define a dictionary containg method_name:const_fieled_value pairs for the projection methods.
+    # Define a dictionary containg method_name:const_fieled_value pairs
+    # for the projection methods.
     methods_as_strings = ['Average Intensity', 'Max Intensity', 'Min Intensity', 'Sum Slices', 'Standard Deviation', 'Median']
     methods_as_const = [ZProjector.AVG_METHOD, ZProjector.MAX_METHOD, ZProjector.MIN_METHOD, ZProjector.SUM_METHOD, ZProjector.SD_METHOD, ZProjector.MEDIAN_METHOD]
     method_dict = dict(zip(methods_as_strings, methods_as_const))
@@ -409,28 +426,32 @@ def subtractzproject(imp, projectionMethod="Median"):
     return impout
 
 
-def doGaussianFilter(imp, radius = 30):
-    """This function takes an input stack, and subtracts a gaussian filtered image
-    from each individual frame. Thereby, everything that is not moving 
-    in a timeseries is filtered away.
+def gaussianFilter(imp, sigmaX=30, sigmaY=30, sigmaZ=1):
+    """This function takes an ImagePlus input stack and from each
+individual frame subtracts its gaussian filtered projection. Only works
+for single channel images. The gaussian filter removes uneven
+illumination from the field of view, and for DIC images generally works
+better than the rolling ball filter.
 
     Args:
-        imp (ImagePlus): An input stack as ImagePlus object.
-        projectionMethod (str, optional): Choose the projection method. Options are 
-            'Average Intensity', 'Max Intensity', 'Min Intensity', 'Sum Slices', 'Standard Deviation', 'Median'. 
-            Defaults to "Median".
+        imp (ImagePlus): The input ImagePlus stack.
+        sigmaX (int, optional): The standard deviation (radius) of gaussian distribution in the x direction. Defaults to 30.
+        sigmaY (int, optional): The standard deviation (radius) of gaussian distribution in the y direction. Defaults to 30.
+        sigmaZ (int, optional): The standard deviation (radius) of gaussian distribution in the z direction. Defaults to 1.
 
     Returns:
-        ImagePlus: The resulting stack.
+        ImagePlus: The gaussianfiltered stack.
     """    
-    #Start by getting the active image window and get the current active channel and other stats
+    # Store image calibration
     cal = imp.getCalibration()
-    title = imp.getTitle()
 
-    # Make gaussian filtered image.
-    gaussian = IJ.run(imp, "Gaussian Blur...", "sigma=30 stack")
+    # Duplicate input ImagePlus
+    gaussian = imp.duplicate()
 
-    # Subtract Z-Projection and return output ImagePlus.
+    # Perform the gaussian filter with input radius.
+    GaussianBlur3D.blur(gaussian, sigmaX, sigmaY, sigmaZ)
+
+    # Subtract gaussian filter and return output ImagePlus.
     impout = ImageCalculator().run("Subtract create 32-bit stack", imp, gaussian)
     impout.setCalibration(cal)
     return impout
