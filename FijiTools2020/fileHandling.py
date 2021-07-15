@@ -1,26 +1,7 @@
 # Jorik van Rijn <jorik.vanrijn@gmail.com> - 2020
 import ij.IJ as IJ
-import ij.io.Opener as Opener
-import ij.ImagePlus as ImagePlus
-import ij.ImageStack as ImageStack
-import ij.WindowManager as wm
 import ij.measure.ResultsTable as ResultsTable
-import ij.measure.Measurements as Measurements
-import ij.plugin.ChannelSplitter as ChannelSplitter
-import ij.plugin.HyperStackConverter as HyperStackConverter
-import ij.plugin.ZProjector as ZProjector
-import ij.plugin.RGBStackMerge as RGBStackMerge
-import ij.plugin.StackCombiner as StackCombiner
-import ij.plugin.MontageMaker as MontageMaker
-import ij.plugin.StackCombiner as StackCombiner
-import ij.plugin.Duplicator as Duplicator
-import ij.plugin.Concatenator as Concatenator
-import ij.plugin.Thresholder as Thresholder
-import ij.plugin.filter.ParticleAnalyzer as ParticleAnalyzer
-import ij.plugin.filter.BackgroundSubtracter as BackgroundSubtracter
-import ij.plugin.filter.EDM as EDM
 import os
-import math
 
 
 def opencsv():
@@ -42,7 +23,8 @@ def opencsv():
     except TypeError:
         IJ.log("The chosen file was not a .csv file.")
     except Exception as ex:
-        IJ.log("Something in opencsv() went wrong: {}".format(type(ex).__name__, ex.args))
+        IJ.log("Something in opencsv() went wrong: {}".format(
+            type(ex).__name__, ex.args))
 
 
 def getresults(rt):
@@ -63,10 +45,11 @@ def getresults(rt):
             {'column1' : 'value', 'column2' : 'value', ...},
             ...,
             ]
-    """    
+    """
     try:
         columns = rt.getHeadings()
-        table = [{column: rt.getValue(column, row) for column in columns} for row in range(rt.size())]
+        table = [{column: rt.getValue(column, row)
+                  for column in columns} for row in range(rt.size())]
         if rt.columnExists("Label"):
             for i in range(len(table)):
                 table[i]["Label"] = rt.getStringValue("Label", i)
@@ -75,7 +58,8 @@ def getresults(rt):
     except AttributeError:
         IJ.log("The parameter passed to getresults() was not a resultsTable object.")
     except Exception as ex:
-        IJ.log("Something in getresults() went wrong: {}".format(type(ex).__name__, ex.args))
+        IJ.log("Something in getresults() went wrong: {}".format(
+            type(ex).__name__, ex.args))
 
 
 def chunks(seq, num):
@@ -105,7 +89,7 @@ def saveimage(imp, outdir):
     Args:
         imp (ImagePlus): An ImagePlus object.
         outdir (dirpath): The output directory.
-    """        
+    """
     name = imp.getTitle()
     outfile = os.path.join(outdir, "{}.jpg".format(name))
     IJ.saveAs(imp, "Tiff", outfile)
