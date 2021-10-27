@@ -6,6 +6,8 @@ import ij.plugin.RGBStackMerge as RGBStackMerge
 import ij.plugin.ZProjector as ZProjector
 import ij.plugin.ImageCalculator as ImageCalculator
 import ij.plugin.GaussianBlur3D as GaussianBlur3D
+import ij.plugin.ContrastEnhancer as ContrastEnhancer
+import ij.process.ImageConverter as ImageConverter
 # from FijiTools2020.impActions import subtractzproject, glidingprojection
 
 
@@ -53,16 +55,23 @@ def main():
 
                # Correct cross-excitation.
                imp = stackCalc(imp, "subtract", 2, 3)
+               
+               # Make z-projection.
+               imp = ZProjector.run(imp,"max")
 
                # Remove background.
                gaussian = imp.duplicate()
-               GaussianBlur3D.blur(gaussian, 20, 20, 1)
+               GaussianBlur3D.blur(gaussian, 100, 100, 1)
                imp = ImageCalculator().run("divide 32-bit create stack", 
                                            imp, gaussian)
-
-               # Make z-projection.
-               ZProjector.run(imp,"max")
-
+               
+               # Reset display range and convert to 8-bit.
+               dims = imp.getDimensions() # width, height, nChannels, nSlices, nFrames               
+               for channel in range(1, dims[2]+1):
+                   imp.setC(channel)  
+                   ContrastEnhancer().stretchHistogram(imp, 0.0)
+            #    imp = ImageConverter(imp).convertToGray16()
+               
                IJ.log("{}".format(name))
                outpath = os.path.join(outdir, name)
                IJ.saveAs(imp, "Tiff", outpath)
