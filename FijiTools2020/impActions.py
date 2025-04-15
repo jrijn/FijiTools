@@ -202,12 +202,13 @@ trackmate "Spots statistics.csv" file.
             j_id = int(j[trackid])
             j_x = int(j[trackxlocation] * xScaleMultiplier)
             j_y = int(j[trackylocation] * yScaleMultiplier)
-            j_t = int(j[tracktlocation])
+            j_t = int(j[tracktlocation] + 1)
 
             # Now set an ROI according to the track's xy position in the
             # hyperstack.
             # upper left x, upper left y,roi x dimension, roi y dimension
             imp.setRoi(j_x, j_y, roi_x, roi_y)
+            IJ.log("processing frame {}".format(j_t))
 
             # Optionally, set the correct time position in the stack.
             # This provides cool feedback but is sloooow!
