@@ -25,7 +25,7 @@ def main():
     # Process channel 1.
     # Execute the auto-thresholding
     result = Auto_Threshold().exec(
-        channels[0], 
+        channels[1], 
         "Triangle", #method
         False, #noWhite
         False, #noBlack
@@ -36,11 +36,11 @@ def main():
         )
 
     # Get the thresholded image
-    channels[0] = result[1]
+    channels[1] = result[1]
 
     # Process channel 2.
     result = Auto_Threshold().exec(
-        channels[1], 
+        channels[0], 
         "Yen", #method
         False, #noWhite
         False, #noBlack
@@ -51,10 +51,10 @@ def main():
         )
     
     # Get the thresholded image
-    channels[1] = result[1]
+    channels[0] = result[1]
     
     # Subtract ATO
-    imp2 = ImageCalculator.run(channels[1], channels[0], "Subtract create stack")
+    imp2 = ImageCalculator.run(channels[0], channels[1], "Subtract create stack")
     imp2.show()
     
     IJ.run("Set Measurements...", "area mean centroid shape skewness area_fraction stack display redirect=None decimal=3")
